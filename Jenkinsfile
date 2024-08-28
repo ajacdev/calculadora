@@ -1,8 +1,7 @@
-def COLOR_MAP = [
-    'SUCCESS': 'good',
-    'FAILURE': 'danger'
-]
-
+def COLOR_MAP =[
+            'SUCCESS':'good',
+            'FAILURE':'danger',
+            ]
 pipeline {
     agent any
 
@@ -14,7 +13,7 @@ pipeline {
         GIT_REPO = 'https://github.com/ajacdev/calculadora.git'
         GIT_BRANCH = 'main'
         scannerHome = tool 'Sonar'
-        SONAR_PROJECT_KEY = 'pruebapractica'
+        SONAR_PROJECT_KEY = 'pruebapractica '
     }
 
     stages {
@@ -23,26 +22,42 @@ pipeline {
                 git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
             }
         }
-        stage('Build') {
+        
+        stage('Test') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
             }
         }
+    
+        
         stage('Code Coverage') {
             steps {
                 sh 'mvn clean cobertura:cobertura'
             }
         }
+        
+        stage('Build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
     }
-
+    
     post {
         always {
             echo 'Slack Notification'
-            slackSend (
-                channel: '#pruebapractica',
-                color: COLOR_MAP[currentBuild.currentResult],
-                message: "*${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\nMore Info at: ${env.BUILD_URL}"
-            )
+            slackSend channel: '#pruebapractica',
+            color: COLOR_MAP[currentBuild.currentResult],
+            message: "*${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More Info at: ${env.BUILD_URL}"
+       
         }
     }
+    
+
 }
+
